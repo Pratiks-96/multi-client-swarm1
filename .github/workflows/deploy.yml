@@ -1,0 +1,26 @@
+name: CI-CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build & Push Node
+        run: |
+          docker build -t pratik6958/client-a:latest ./client-a
+          docker push pratik6958/client-a:latest
+
+      - name: Build & Push FastAPI
+        run: |
+          docker build -t pratik6958/client-b:latest ./client-b
+          docker push pratik6958/client-b:latest
