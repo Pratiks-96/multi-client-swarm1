@@ -50,7 +50,7 @@ services:
 
         - traefik.http.middlewares.client-a-strip.stripprefix.prefixes=/client-a
 
-        - traefik.http.services.client-a.loadbalancer.server.port=3000
+        - traefik.http.services.client-a.loadbalancer.server.port=3001
 
 
   client-b:
@@ -73,41 +73,42 @@ services:
         - traefik.http.services.client-b.loadbalancer.server.port=8000
 
 
-  prometheus:
-    image: prom/prometheus:latest
+ prometheus:
+  image: prom/prometheus:latest
+  command:
+    - --web.external-url=/prometheus
+    - --web.route-prefix=/
 
-    networks:
-      - traefik-public
+  networks:
+    - traefik-public
 
-    deploy:
-      replicas: 1
-      labels:
-        - traefik.enable=true
+  deploy:
+    replicas: 1
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
+      - traefik.http.routers.prometheus.entrypoints=web
+      - traefik.http.middlewares.prom-strip.stripprefix.prefixes=/prometheus
+      - traefik.http.routers.prometheus.middlewares=prom-strip
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
-        - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
-        - traefik.http.routers.prometheus.entrypoints=web
-        - traefik.http.routers.prometheus.middlewares=prom-strip
+grafana:
+  image: grafana/grafana:latest
 
-        - traefik.http.middlewares.prom-strip.stripprefix.prefixes=/prometheus
+  environment:
+    - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana
+    - GF_SERVER_SERVE_FROM_SUB_PATH=true
 
-        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+  networks:
+    - traefik-public
 
-
-  grafana:
-    image: grafana/grafana:latest
-
-    networks:
-      - traefik-public
-
-    deploy:
-      replicas: 1
-      labels:
-        - traefik.enable=true
-
-        - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
-        - traefik.http.routers.grafana.entrypoints=web
-        - traefik.http.routers.grafana.middlewares=grafana-strip
-
-        - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
-
-        - traefik.http.services.grafana.loadbalancer.server.port=3000
+  deploy:
+    replicas: 1
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.middlewares=grafana-strip
+      - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+ 
