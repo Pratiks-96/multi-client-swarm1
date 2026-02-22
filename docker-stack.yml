@@ -48,7 +48,7 @@ services:
         - traefik.http.routers.client-a.entrypoints=web
         - traefik.http.middlewares.client-a-strip.stripprefix.prefixes=/client-a
         - traefik.http.routers.client-a.middlewares=client-a-strip
-        - traefik.http.services.client-a.loadbalancer.server.port=3000
+        - traefik.http.services.client-a.loadbalancer.server.port=8000
 
   client-b:
     image: pratik6958/client-b:latest
