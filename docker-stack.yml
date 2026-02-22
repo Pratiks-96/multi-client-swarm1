@@ -5,6 +5,10 @@ networks:
     driver: overlay
     attachable: true
 
+volumes:
+  prometheus-data:
+  grafana-data:
+
 services:
 
   traefik:
@@ -13,10 +17,17 @@ services:
     command:
       - --api.dashboard=true
       - --api.insecure=true
+
+      # Swarm provider (REQUIRED for Docker Swarm)
       - --providers.swarm=true
       - --providers.swarm.endpoint=unix:///var/run/docker.sock
       - --providers.swarm.exposedbydefault=false
+
+      # Entry point
       - --entrypoints.web.address=:80
+
+      # Logging
+      - --log.level=INFO
 
     ports:
       - "80:80"
@@ -33,6 +44,9 @@ services:
         constraints:
           - node.role==manager
 
+  # =========================
+  # CLIENT A (NODEJS PORT 3001)
+  # =========================
   client-a:
     image: pratik6958/client-a:latest
 
@@ -41,18 +55,25 @@ services:
 
     deploy:
       replicas: 3
+
       labels:
         - traefik.enable=true
 
+        # Router
         - traefik.http.routers.client-a.rule=PathPrefix(`/client-a`)
         - traefik.http.routers.client-a.entrypoints=web
+
+        # Middleware
+        - traefik.http.middlewares.client-a-strip.stripprefix.prefixes=/client-a
         - traefik.http.routers.client-a.middlewares=client-a-strip
 
-        - traefik.http.middlewares.client-a-strip.stripprefix.prefixes=/client-a
-
+        # Service port (IMPORTANT → 3001)
         - traefik.http.services.client-a.loadbalancer.server.port=3001
 
 
+  # =========================
+  # CLIENT B (FASTAPI PORT 8000)
+  # =========================
   client-b:
     image: pratik6958/client-b:latest
 
@@ -61,54 +82,71 @@ services:
 
     deploy:
       replicas: 3
+
       labels:
         - traefik.enable=true
 
+        # Router
         - traefik.http.routers.client-b.rule=PathPrefix(`/client-b`)
         - traefik.http.routers.client-b.entrypoints=web
+
+        # Middleware
+        - traefik.http.middlewares.client-b-strip.stripprefix.prefixes=/client-b
         - traefik.http.routers.client-b.middlewares=client-b-strip
 
-        - traefik.http.middlewares.client-b-strip.stripprefix.prefixes=/client-b
-
+        # FastAPI port
         - traefik.http.services.client-b.loadbalancer.server.port=8000
 
 
- prometheus:
-  image: prom/prometheus:latest
-  command:
-    - --web.external-url=/prometheus
-    - --web.route-prefix=/
+  # =========================
+  # PROMETHEUS
+  # =========================
+  prometheus:
+    image: prom/prometheus:latest
 
-  networks:
-    - traefik-public
+    volumes:
+      - prometheus-data:/prometheus
 
-  deploy:
-    replicas: 1
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
-      - traefik.http.routers.prometheus.entrypoints=web
-      - traefik.http.middlewares.prom-strip.stripprefix.prefixes=/prometheus
-      - traefik.http.routers.prometheus.middlewares=prom-strip
-      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+    networks:
+      - traefik-public
 
-grafana:
-  image: grafana/grafana:latest
+    deploy:
+      replicas: 1
 
-  environment:
-    - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana
-    - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      labels:
+        - traefik.enable=true
 
-  networks:
-    - traefik-public
+        - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
+        - traefik.http.routers.prometheus.entrypoints=web
 
-  deploy:
-    replicas: 1
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
-      - traefik.http.routers.grafana.entrypoints=web
-      - traefik.http.middlewares=grafana-strip
-      - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
-      - traefik.http.services.grafana.loadbalancer.server.port=3000
- 
+        - traefik.http.middlewares.prometheus-strip.stripprefix.prefixes=/prometheus
+        - traefik.http.routers.prometheus.middlewares=prometheus-strip
+
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+
+
+  # =========================
+  # GRAFANA
+  # =========================
+  grafana:
+    image: grafana/grafana:latest
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+    networks:
+      - traefik-public
+
+    deploy:
+      replicas: 1
+
+      labels:
+        - traefik.enable=true
+
+        - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
+        - traefik.http.routers.grafana.entrypoints=web
+
+        - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
+        - traefik.http.routers.grafana.middlewares=grafana-strip
+
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
