@@ -79,11 +79,11 @@ services:
 
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.48.1
 
     command:
       - --web.enable-lifecycle
-      - --web.external-url=http://3.110.182.59/prometheus
+      - --web.external-url=http://localhost/prometheus
       - --web.route-prefix=/
 
     volumes:
@@ -108,7 +108,7 @@ services:
     image: grafana/grafana:latest
 
     environment:
-      - GF_SERVER_ROOT_URL=http://3.110.182.59/grafana
+      - GF_SERVER_ROOT_URL=http://localhost/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
 
     volumes:
