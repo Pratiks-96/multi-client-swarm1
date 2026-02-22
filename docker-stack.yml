@@ -116,23 +116,29 @@ services:
   grafana:
     image: grafana/grafana:latest
 
+    networks:
+      - traefik-public
+
     volumes:
       - grafana-data:/var/lib/grafana
 
     environment:
-      - GF_SERVER_ROOT_URL=http://3.110.182.59/grafana
+      - GF_SERVER_ROOT_URL=http://3.110.182.59/grafana/
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
-
-    networks:
-      - traefik-public
 
     deploy:
       replicas: 1
 
       labels:
         - traefik.enable=true
+
+        # Router
         - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
         - traefik.http.routers.grafana.entrypoints=web
+
+        # Middleware strip prefix
         - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
         - traefik.http.routers.grafana.middlewares=grafana-strip
+
+        # Grafana internal port
         - traefik.http.services.grafana.loadbalancer.server.port=3000
