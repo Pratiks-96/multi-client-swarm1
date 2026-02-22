@@ -18,7 +18,7 @@ docker service ls
 docker service logs multi-client_traefik -f
 
 
-# if you dont want to maually building image and all then you can go for github workflow i updated the yaml for build and pudh image to docker hub repo 
+if you dont want to maually building image and all then you can go for github workflow i updated the yaml for build and push image to docker hub repo 
 
 
 
