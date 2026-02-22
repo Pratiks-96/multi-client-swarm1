@@ -1,5 +1,5 @@
-# ---------- BUILD STAGE ----------
-FROM node:20-alpine AS builder
+# ---------- BUILD ----------
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -12,16 +12,15 @@ COPY . .
 RUN npm run build
 
 
-# ---------- PRODUCTION STAGE ----------
-FROM node:20-alpine
+# ---------- PRODUCTION ----------
+FROM node:18-alpine
 
 WORKDIR /app
 
+COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
 RUN npm install --omit=dev
-
-COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
 
