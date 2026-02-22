@@ -6,25 +6,23 @@ networks:
     attachable: true
 
 volumes:
-  prometheus-data:
   grafana-data:
 
 services:
 
+  # ======================
+  # TRAEFIK
+  # ======================
   traefik:
     image: traefik:v3.6
 
     command:
       - --api.dashboard=true
       - --api.insecure=true
-
       - --providers.swarm=true
       - --providers.swarm.endpoint=unix:///var/run/docker.sock
       - --providers.swarm.exposedbydefault=false
-
       - --entrypoints.web.address=:80
-
-      - --log.level=DEBUG
 
     ports:
       - "80:80"
@@ -41,7 +39,9 @@ services:
         constraints:
           - node.role==manager
 
-
+  # ======================
+  # CLIENT A (NODEJS PORT 3001)
+  # ======================
   client-a:
     image: pratik6958/client-a:latest
 
@@ -60,6 +60,9 @@ services:
         - traefik.http.services.client-a.loadbalancer.server.port=3001
 
 
+  # ======================
+  # CLIENT B (FASTAPI PORT 8000)
+  # ======================
   client-b:
     image: pratik6958/client-b:latest
 
@@ -78,52 +81,58 @@ services:
         - traefik.http.services.client-b.loadbalancer.server.port=8000
 
 
+  # ======================
+  # PROMETHEUS
+  # ======================
   prometheus:
     image: prom/prometheus:v2.48.1
 
     command:
-      - --web.enable-lifecycle
-      - --web.external-url=http://localhost/prometheus
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.external-url=http://3.110.182.59/prometheus
       - --web.route-prefix=/
 
     volumes:
-      - prometheus-data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
 
     networks:
       - traefik-public
 
     deploy:
+      replicas: 1
+
       labels:
         - traefik.enable=true
         - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
         - traefik.http.routers.prometheus.entrypoints=web
-
         - traefik.http.middlewares.prometheus-strip.stripprefix.prefixes=/prometheus
         - traefik.http.routers.prometheus.middlewares=prometheus-strip
-
         - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
 
+  # ======================
+  # GRAFANA
+  # ======================
   grafana:
     image: grafana/grafana:latest
 
-    environment:
-      - GF_SERVER_ROOT_URL=http://localhost/grafana
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
-
     volumes:
       - grafana-data:/var/lib/grafana
+
+    environment:
+      - GF_SERVER_ROOT_URL=http://3.110.182.59/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
 
     networks:
       - traefik-public
 
     deploy:
+      replicas: 1
+
       labels:
         - traefik.enable=true
         - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
         - traefik.http.routers.grafana.entrypoints=web
-
         - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
         - traefik.http.routers.grafana.middlewares=grafana-strip
-
         - traefik.http.services.grafana.loadbalancer.server.port=3000
