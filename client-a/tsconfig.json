@@ -3,11 +3,22 @@
     "module": "CommonJS",
     "target": "ES2022",
     "moduleResolution": "node",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "strict": true,
+
     "outDir": "dist",
-    "skipLibCheck": true
+    "rootDir": "src",
+
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+
+    "forceConsistentCasingInFileNames": true,
+
+    "resolveJsonModule": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["src/**/*"]
+
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
