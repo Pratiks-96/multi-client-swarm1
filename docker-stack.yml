@@ -32,7 +32,7 @@ services:
           - node.role==manager
 
   client-a:
-    image: client-a:latest
+    image: pratik6958/client-a:latest
     networks:
       - traefik-public
     deploy:
@@ -47,7 +47,7 @@ services:
         traefik.http.middlewares.client-a-strip.stripprefix.prefixes: /client-a
 
   client-b:
-    image: client-b:latest
+    image: pratik6958/client-b:latest
     networks:
       - traefik-public
     deploy:
