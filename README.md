@@ -18,6 +18,9 @@ docker service ls
 docker service logs multi-client_traefik -f
 
 
+# if you dont want to maually building image and all then you can go for github workflow i updated the yaml for build and pudh image to docker hub repo 
+
+
 
 
 Traefik dashboard look like this when all path are configured well
@@ -29,5 +32,12 @@ also check the prometheus target healths
 
 after that grafana dashboard for this all client-a , client-b
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/6ec6c03d-1eb9-493f-90d7-238bf0ba8beb" />
+
+client-a
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/7ac540e8-f28b-4d0c-ad62-a3764b2ac4ab" />
+
+client-b
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/1f65d454-18cc-4052-adca-2c06be6d77c3" />
+
 
 
