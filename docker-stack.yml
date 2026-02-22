@@ -9,12 +9,13 @@ services:
 
   traefik:
     image: traefik:v3.6
+
     command:
       - --api.dashboard=true
       - --api.insecure=true
-      - --providers.docker=true
-      - --providers.docker.swarmMode=true
-      - --providers.docker.exposedbydefault=false
+      - --providers.swarm=true
+      - --providers.swarm.endpoint=unix:///var/run/docker.sock
+      - --providers.swarm.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --log.level=DEBUG
 
@@ -31,7 +32,7 @@ services:
     deploy:
       placement:
         constraints:
-          - node.role == manager
+          - node.role==manager
 
   client-a:
     image: pratik6958/client-a:latest
@@ -45,6 +46,8 @@ services:
         - traefik.enable=true
         - traefik.http.routers.client-a.rule=PathPrefix(`/client-a`)
         - traefik.http.routers.client-a.entrypoints=web
+        - traefik.http.middlewares.client-a-strip.stripprefix.prefixes=/client-a
+        - traefik.http.routers.client-a.middlewares=client-a-strip
         - traefik.http.services.client-a.loadbalancer.server.port=3000
 
   client-b:
@@ -59,6 +62,8 @@ services:
         - traefik.enable=true
         - traefik.http.routers.client-b.rule=PathPrefix(`/client-b`)
         - traefik.http.routers.client-b.entrypoints=web
+        - traefik.http.middlewares.client-b-strip.stripprefix.prefixes=/client-b
+        - traefik.http.routers.client-b.middlewares=client-b-strip
         - traefik.http.services.client-b.loadbalancer.server.port=3000
 
   prometheus:
@@ -73,6 +78,8 @@ services:
         - traefik.enable=true
         - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
         - traefik.http.routers.prometheus.entrypoints=web
+        - traefik.http.middlewares.prom-strip.stripprefix.prefixes=/prometheus
+        - traefik.http.routers.prometheus.middlewares=prom-strip
         - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   grafana:
@@ -87,4 +94,6 @@ services:
         - traefik.enable=true
         - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
         - traefik.http.routers.grafana.entrypoints=web
+        - traefik.http.middlewares.grafana-strip.stripprefix.prefixes=/grafana
+        - traefik.http.routers.grafana.middlewares=grafana-strip
         - traefik.http.services.grafana.loadbalancer.server.port=3000
