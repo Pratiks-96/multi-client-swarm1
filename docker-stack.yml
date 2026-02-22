@@ -11,9 +11,6 @@ volumes:
 
 services:
 
-  # =========================
-  # TRAEFIK
-  # =========================
   traefik:
     image: traefik:v3.6
 
@@ -45,9 +42,6 @@ services:
           - node.role==manager
 
 
-  # =========================
-  # CLIENT A (NodeJS PORT 3001)
-  # =========================
   client-a:
     image: pratik6958/client-a:latest
 
@@ -61,16 +55,11 @@ services:
         - traefik.enable=true
         - traefik.http.routers.client-a.rule=PathPrefix(`/client-a`)
         - traefik.http.routers.client-a.entrypoints=web
-
         - traefik.http.middlewares.client-a-strip.stripprefix.prefixes=/client-a
         - traefik.http.routers.client-a.middlewares=client-a-strip
-
         - traefik.http.services.client-a.loadbalancer.server.port=3001
 
 
-  # =========================
-  # CLIENT B (FastAPI PORT 8000)
-  # =========================
   client-b:
     image: pratik6958/client-b:latest
 
@@ -84,21 +73,17 @@ services:
         - traefik.enable=true
         - traefik.http.routers.client-b.rule=PathPrefix(`/client-b`)
         - traefik.http.routers.client-b.entrypoints=web
-
         - traefik.http.middlewares.client-b-strip.stripprefix.prefixes=/client-b
         - traefik.http.routers.client-b.middlewares=client-b-strip
-
         - traefik.http.services.client-b.loadbalancer.server.port=8000
 
 
-  # =========================
-  # PROMETHEUS
-  # =========================
   prometheus:
     image: prom/prometheus:latest
 
     command:
-      - --web.external-url=/prometheus
+      - --web.enable-lifecycle
+      - --web.external-url=http://3.110.182.59/prometheus
       - --web.route-prefix=/
 
     volumes:
@@ -108,8 +93,6 @@ services:
       - traefik-public
 
     deploy:
-      replicas: 1
-
       labels:
         - traefik.enable=true
         - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
@@ -121,14 +104,11 @@ services:
         - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
 
-  # =========================
-  # GRAFANA
-  # =========================
   grafana:
     image: grafana/grafana:latest
 
     environment:
-      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana
+      - GF_SERVER_ROOT_URL=http://3.110.182.59/grafana
       - GF_SERVER_SERVE_FROM_SUB_PATH=true
 
     volumes:
@@ -138,8 +118,6 @@ services:
       - traefik-public
 
     deploy:
-      replicas: 1
-
       labels:
         - traefik.enable=true
         - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
