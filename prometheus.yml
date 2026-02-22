@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "client-a"
+    static_configs:
+      - targets: ["client-a:3001"]
+
+  - job_name: "client-b"
+    static_configs:
+      - targets: ["client-b:8000"]
