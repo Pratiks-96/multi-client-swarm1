@@ -1,0 +1,96 @@
+version: "3.9"
+
+networks:
+  traefik-public:
+    external: true
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+services:
+
+  traefik:
+    image: traefik:v3.6
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --entrypoints.web.address=:80
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=traefik-public
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.role==manager
+
+  client-a:
+    image: client-a:latest
+    networks:
+      - traefik-public
+    deploy:
+      replicas: 3
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: traefik-public
+        traefik.http.routers.client-a.rule: PathPrefix(`/client-a`)
+        traefik.http.routers.client-a.entrypoints: web
+        traefik.http.routers.client-a.middlewares: client-a-strip
+        traefik.http.services.client-a.loadbalancer.server.port: "3000"
+        traefik.http.middlewares.client-a-strip.stripprefix.prefixes: /client-a
+
+  client-b:
+    image: client-b:latest
+    networks:
+      - traefik-public
+    deploy:
+      replicas: 3
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: traefik-public
+        traefik.http.routers.client-b.rule: PathPrefix(`/client-b`)
+        traefik.http.routers.client-b.entrypoints: web
+        traefik.http.routers.client-b.middlewares: client-b-strip
+        traefik.http.services.client-b.loadbalancer.server.port: "8000"
+        traefik.http.middlewares.client-b-strip.stripprefix.prefixes: /client-b
+
+  prometheus:
+    image: prom/prometheus:latest
+    networks:
+      - traefik-public
+    volumes:
+      - prometheus-data:/prometheus
+    deploy:
+      replicas: 1
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: traefik-public
+        traefik.http.routers.prometheus.rule: PathPrefix(`/prometheus`)
+        traefik.http.routers.prometheus.entrypoints: web
+        traefik.http.routers.prometheus.middlewares: prometheus-strip
+        traefik.http.services.prometheus.loadbalancer.server.port: "9090"
+        traefik.http.middlewares.prometheus-strip.stripprefix.prefixes: /prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    networks:
+      - traefik-public
+    volumes:
+      - grafana-data:/var/lib/grafana
+    deploy:
+      replicas: 1
+      labels:
+        traefik.enable: "true"
+        traefik.docker.network: traefik-public
+        traefik.http.routers.grafana.rule: PathPrefix(`/grafana`)
+        traefik.http.routers.grafana.entrypoints: web
+        traefik.http.routers.grafana.middlewares: grafana-strip
+        traefik.http.services.grafana.loadbalancer.server.port: "3000"
+        traefik.http.middlewares.grafana-strip.stripprefix.prefixes: /grafana
