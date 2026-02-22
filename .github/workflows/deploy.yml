@@ -13,25 +13,7 @@ jobs:
       - uses: actions/checkout@v3
 
 
-      # Install Node.js
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
 
-
-      # Install dependencies for client-a
-      - name: Install dependencies (client-a)
-        run: |
-          cd client-a
-          npm ci
-
-
-      # Build client-a project
-      - name: Build project (client-a)
-        run: |
-          cd client-a
-          npm run build
 
 
       - name: Login DockerHub
